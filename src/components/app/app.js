@@ -1,3 +1,13 @@
+import {initializeApp} from 'firebase/app';
+import {
+  getDatabase,
+  ref,
+  push,
+  onValue,
+  remove,
+  set,
+} from 'firebase/database';
+
 import React, { Component } from 'react';
 import nextId from "react-id-generator";
 
@@ -9,20 +19,48 @@ import EmployeesAddForm from '../employees-add-form';
 
 import './app.css';
 
+const firebaseConfig = {
+  databaseURL:
+    'https://shop-together-6a782-default-rtdb.europe-west1.firebasedatabase.app/',
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+const employeesInDB = ref(database, 'employees');
+
 class App extends Component {
 	constructor(props) {
 		super(props);
 
 		this.state = {
-			data: [
-				{name: 'Jhon C.', salary: 800, increase: false, rise: true, id: 1},
-				{name: 'Alex M.', salary: 1800, increase: true, rise: false, id: 2},
-				{name: 'Carl S.', salary: 2300, increase: false, rise: false, id: 3}
-			],
-			term: '',
-			filter: 'all'
-		}
+      data: [],
+      term: '',
+      filter: 'all', // active, all, done
+    };
 	}
+
+	componentDidMount() {
+    // Listen for changes in the "employees" collection
+    onValue(employeesInDB, (snapshot) => {
+      const data = snapshot.val() || [];
+
+      // Convert the object to an array of data
+      const stuffArray = Object.keys(data).filter((key) => key !== "filter").map((key) => ({
+        id: key,
+        ...data[key],
+      }));
+			stuffArray.forEach((item, index) => {
+				item.id = Object.keys(data)[index];
+			});
+
+      this.setState({ data: stuffArray });
+    });
+		// Convert the "filter" value to a string
+		onValue(ref(database, 'employees/filter'), (snapshot) => {
+			const filter = snapshot.val() || 'all';
+			this.setState({ filter });
+		});
+  }
 
 	onDeleteItem = (id) => {
 		this.setState(({ data }) => {
@@ -30,6 +68,10 @@ class App extends Component {
 				data: data.filter((el) => el.id !== id)
 			};
 		});
+
+		// Remove the employee with the specified ID from the "employees" collection
+		let exactLocationOfItemInDB = ref(database, `employees/${id}`);
+		remove(exactLocationOfItemInDB);
 	};
 
 	addItem = (name, salary) => {
@@ -51,18 +93,35 @@ class App extends Component {
 				data: newArray
 			};
 		});
+
+		// Add a new employee to the "employees" collection
+		const newEmployeeRef = push(employeesInDB);
+		const newEmployeeKey = newEmployeeRef.key;
+		newItem.id = newEmployeeKey;
+		set(newEmployeeRef, newItem);
 	};
-
+	
 	onToggleProperty = (id, propName) => {
+		const employeeToUpdate = this.state.data.find((item) => item.id === id);
+		
+		if (!employeeToUpdate) {
+			console.error(`Item with ID ${id} not found.`);
+			return;
+		}
 
-		this.setState(({ data }) => ({
-			data: data.map(item => {
-				if (item.id === id) {
-					return {...item, [propName]: !item[propName]}
-				}
-				return item;
-			})
+		// Update the property locally
+		const updatedEmployee = {...employeeToUpdate, [propName]: !employeeToUpdate[propName]};
+
+		// Update data in the state
+		this.setState(({data}) => ({
+			data: data.map((item) => (item.id === id ? updatedEmployee : item)),
 		}));
+
+		// Update the employee in the "employees" collection
+		const employeeRef = ref(database, `employees/${id}`);
+		set(employeeRef, updatedEmployee).catch((error) => {
+			console.error('Error updating item: ', error);
+		});
 	};
 
 	searchForm = (items, term) => {
@@ -87,7 +146,14 @@ class App extends Component {
 	};
 
 	onFilterSelect = (filter) => {
+		console.log(filter);
 		this.setState({ filter });
+
+		// Update the filter in the "employees" collection
+		const employeeRef = ref(database, `employees/filter`);
+		set(employeeRef, filter).catch((error) => {
+			console.error('Error updating item: ', error);
+		});
 	};
 
 
@@ -117,7 +183,7 @@ class App extends Component {
 				/>
 				<EmployeesAddForm onAdd = { this.addItem }/>
 			</div>
-	);
+		);
 	}
 }
 
