@@ -1,2 +1,2 @@
 # employees list application
-### Of course, starting with React 16.8, Facebook recommends to create  functional components instead of class ones nowadays. But many projects that were created in the past require support today. So I learned to work with class components too.
+### Of course, starting with React 16.8, Facebook recommends creating functional components instead of class ones. But many projects created in the past need support today. And so I studied how class components work.
