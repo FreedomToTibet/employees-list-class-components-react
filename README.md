@@ -1,4 +1,4 @@
-## This is a classic CRUD application
+## This is a classic CRUD application - Employees List
 
 ### Here you can:
 - add and remove employees;
