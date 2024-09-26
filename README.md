@@ -1,2 +1,16 @@
-# employees list application
-### Of course, starting with React 16.8, Facebook recommends creating functional components instead of class ones. But many projects created in the past need support today. And so I studied how class components work.
+## This is a classic CRUD application
+
+### Here you can:
+- add and remove employees;
+- mark employees for career growth (star);
+- assign a bonus to employees (cookie);
+- filter employees;
+- find employees.
+
+This Single Page Application (SPA) uses Firebase as a database. All changes are saved there.
+
+### Technologies used in development:
+
+- React;
+- class components;
+- Firbase.
